@@ -1,12 +1,12 @@
 const { Tray, nativeTheme, Menu, MenuItem } = require('electron');
 const path = require('path');
-const lightIcon = path.join(__dirname, './resources/light3.png');
-const darkIcon = path.join(__dirname, './resources/dark3.png');
+const lightIcon = path.join(__dirname, '../assets/light/tray.png');
+const darkIcon = path.join(__dirname, '../assets/dark/tray.png');
 
 let menuIcon = null;
 
 const buildMenuIcon = (capture, quit, setRGB) => {
-  menuIcon = new Tray(nativeTheme.shouldUseDarkColors ? darkIcon : lightIcon);
+  menuIcon = new Tray(nativeTheme.shouldUseDarkColors ? lightIcon : darkIcon);
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Capture', click: capture },
@@ -27,7 +27,7 @@ const buildMenuIcon = (capture, quit, setRGB) => {
 };
 
 nativeTheme.on('updated', () =>
-  menuIcon.setImage(nativeTheme.shouldUseDarkColors ? darkIcon : lightIcon)
+  menuIcon.setImage(nativeTheme.shouldUseDarkColors ? lightIcon : darkIcon)
 );
 
 module.exports = buildMenuIcon;
