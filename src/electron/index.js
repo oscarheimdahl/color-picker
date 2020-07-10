@@ -6,6 +6,7 @@ const buildColorWindow = require('./color.js');
 let color = '';
 let colorWindow;
 let capturerWindow;
+let colorFormat = 'hex';
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -16,22 +17,27 @@ if (process.platform === 'darwin') {
 }
 
 const build = () => {
-  buildMenuIcon(capture, app.quit);
-  //   colorWindow = buildColorWindow();
-  //   capturerWindow = buildCapturerWindow();
+  buildMenuIcon(capture, app.quit, setRGB);
 };
 
 const capture = () => {
   if (!colorWindow || colorWindow.isDestroyed()) {
-    console.log('building capture');
     colorWindow = buildColorWindow();
     capturerWindow = buildCapturerWindow();
   }
   capturerWindow.once('ready-to-show', () => {
+    capturerWindow.webContents.send('set-format', colorFormat === 'rgb');
     colorWindow.show();
     capturerWindow.show();
     capturerWindow.webContents.send('capture-screen');
   });
+};
+
+const setRGB = (rgb) => {
+  if (rgb) colorFormat = 'rgb';
+  else colorFormat = 'hex';
+  if (capturerWindow)
+    capturerWindow.webContents.send('set-format', colorFormat === 'rgb');
 };
 
 app.on('ready', build);
@@ -47,7 +53,6 @@ ipcMain.on('select-color', () => {
     capturerWindow.close();
     colorWindow.close();
   }, 300);
-  console.log(`color: ${color}`);
 });
 
 ipcMain.on('color', (event, data) => {

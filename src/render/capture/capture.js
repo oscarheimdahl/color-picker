@@ -4,6 +4,7 @@ const {
   remote,
   nativeImage,
 } = require('electron');
+
 const plopp = new Audio('plopp.m4a');
 plopp.volume = 0.3;
 const { screen } = remote;
@@ -11,10 +12,7 @@ const { screen } = remote;
 let screenShotSize = null;
 let bitmap = null;
 let color = '';
-
-ipcRenderer.on('capture-screen', () => {
-  fullscreenScreenshot();
-});
+let rgb = false;
 
 document.addEventListener('mousemove', () => {
   if (bitmap) getPixelColor();
@@ -22,9 +20,20 @@ document.addEventListener('mousemove', () => {
 
 document.addEventListener('click', () => {
   ipcRenderer.send('select-color');
-  navigator.clipboard.writeText(color);
+  let colorString = rgb
+    ? `rgb(${color.r}, ${color.g}, ${color.b})`
+    : rgbToHex(color.r, color.g, color.b);
+  navigator.clipboard.writeText(colorString);
   plopp.play();
 });
+
+const rgbToHex = (r, g, b) => {
+  const componentToHex = (c) => {
+    var hex = c.toString(16);
+    return hex.length == 1 ? '0' + hex : hex;
+  };
+  return '#' + componentToHex(r) + componentToHex(g) + componentToHex(b);
+};
 
 const getPixelColor = () => {
   const mousePos = screen.getCursorScreenPoint();
@@ -35,8 +44,11 @@ const getPixelColor = () => {
   const g = bitmap[index + 1] + 1;
   const r = bitmap[index + 2];
   const a = bitmap[index + 3];
-  color = `rgb(${r},${g},${b})`;
-  ipcRenderer.send('color', { color: `rgb(${r},${g},${b})`, mousePos });
+  color = { r, g, b };
+  ipcRenderer.send('color', {
+    color: `rgb(${color.r},${color.g},${color.b})`,
+    mousePos,
+  });
 };
 
 function fullscreenScreenshot(callback) {
@@ -82,7 +94,6 @@ const handleStream = (stream) => {
 
     video.play();
 
-    // Create canvas
     var canvas = document.createElement('canvas');
     canvas.width = this.videoWidth;
     canvas.height = this.videoHeight;
@@ -90,9 +101,7 @@ const handleStream = (stream) => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     var image = new Image('image/webp', 1.0);
-    // image.onload = function () {
-    //   console.log(image.width); // image is loaded and we have image width
-    // };
+
     image.src = canvas.toDataURL();
     document.body.appendChild(image);
     const img = nativeImage.createFromDataURL(image.src);
@@ -106,3 +115,11 @@ const handleStream = (stream) => {
   video.srcObject = stream;
   document.body.appendChild(video);
 };
+
+ipcRenderer.on('capture-screen', () => {
+  fullscreenScreenshot();
+});
+
+ipcRenderer.on('set-format', (_, data) => {
+  rgb = data;
+});
